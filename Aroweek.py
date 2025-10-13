@@ -15,40 +15,57 @@ class Aroweek:
     steps_per_revolution = 4 #directly on motor
     motor_gear_ratio = 50/1 #50 to 1
     
+    motor_speed = 10
+    target_angle_tollerance = 0.01*2*np.pi #radian
     
     mm_per_step = (np.pi*wheel_diameter)/(steps_per_revolution*motor_gear_ratio)
 
     def __init__(self, left_wheel_pin, left_encoder_pin_A, left_encoder_pin_B, right_wheel_pin, right_encoder_pin_A, right_encoder_pin_B):
-        self.left_wheel_pin = left_wheel_pin
-        self.left_encoder = Encoder.Encoder(left_encoder_pin_A, left_encoder_pin_B)
-        self.right_wheel_pin = right_wheel_pin
-        self.right_encoder = Encoder.Encoder(right_encoder_pin_A, right_encoder_pin_B)
-        self.compass = adafruit_lsm303dlh_mag.LSM303DLH_Mag(board.i2c())
+        self._left_wheel_pin = left_wheel_pin
+        self._left_encoder = Encoder.Encoder(left_encoder_pin_A, left_encoder_pin_B)
+        self._right_wheel_pin = right_wheel_pin
+        self._right_encoder = Encoder.Encoder(right_encoder_pin_A, right_encoder_pin_B)
+        self._compass = adafruit_lsm303dlh_mag.LSM303DLH_Mag(board.i2c())
         
-        self.x_pos = 0
-        self.y_pos = 0
+        self._x_pos = 0
+        self._y_pos = 0
 
-    # Instance method
-    def drive(self, miles):
-        """Increase mileage when the car is driven."""
-        if miles > 0:
-            self._mileage += miles
-            print(f"{self.brand} {self.model} drove {miles} miles.")
-        else:
-            print("Miles must be positive!")
             
-    def rotate_vehicle_to(self, angle):
+    def go_to_position(self, x, y):
+        distance = np.sqrt((x-self._x_pos)**2+(y-self._y_pos)**2)
+        angle = np.arctan2(y-self._y_pos, x-self._x_pos)
+        
+        self._rotate_vehicle_to(angle)
+        self.travel_distance_forward(distance)
+        
+        
+    def _travel_distance_forward(self, distance):
+        
+        
+    def _rotate_vehicle_to(self, angle):
+        while(np.abs(angle - self.get_orientation()) > self.target_angle_tollerance):
+            delta_angle = angle - self.get_orientation()
+            direction = np.sign(delta_angle)
+            if delta_angle > np.pi:
+                direction = -direction
+            self._set_left_motor_speed(self.motor_speed*(-direction))
+            self._set_right_motor_speed(self.motor_speed*direction)
+        self._set_left_motor_speed(0)
+        self._set_right_motor_speed(0)
         
             
     def get_orientation(self):
-        magnet_x, magnet_y, _ = self.compass.megnetic
+        magnet_x, magnet_y, _ = self._compass.megnetic
         return np.arctan2(magnet_y, magnet_x)
-    
-    def set_right_motor_speed(self, speed):
-        #figure out PWM
         
-    def set_left_motor_speed(self, speed):
+    def _set_right_motor_speed(self, speed):
         #figure out PWM
+        print("not implemented")
+        
+    def _set_left_motor_speed(self, speed):
+        #figure out PWM
+        print("not implemented")
+        
 
     # Getter method (property)
     @property
