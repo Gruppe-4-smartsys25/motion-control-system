@@ -12,9 +12,11 @@ import board
 
 class Aroweek:
     wheel_diameter = 60 #mm
-    steps_per_revolution = 200
+    steps_per_revolution = 4 #directly on motor
+    motor_gear_ratio = 50/1 #50 to 1
     
-    mm_per_step = (np.pi*wheel_diameter)/steps_per_revolution
+    
+    mm_per_step = (np.pi*wheel_diameter)/(steps_per_revolution*motor_gear_ratio)
 
     def __init__(self, left_wheel_pin, left_encoder_pin_A, left_encoder_pin_B, right_wheel_pin, right_encoder_pin_A, right_encoder_pin_B):
         self.left_wheel_pin = left_wheel_pin
@@ -35,9 +37,18 @@ class Aroweek:
         else:
             print("Miles must be positive!")
             
+    def rotate_vehicle_to(self, angle):
+        
+            
     def get_orientation(self):
         magnet_x, magnet_y, _ = self.compass.megnetic
         return np.arctan2(magnet_y, magnet_x)
+    
+    def set_right_motor_speed(self, speed):
+        #figure out PWM
+        
+    def set_left_motor_speed(self, speed):
+        #figure out PWM
 
     # Getter method (property)
     @property
