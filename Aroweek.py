@@ -5,14 +5,26 @@ Created on Mon Sep 15 00:21:36 2025
 @author: Potato
 """
 
-class Aroweek:
-    # Class attribute (shared by all instances)
-    
+import numpy as np
+import Encoder
+import adafruit_lsm303dlh_mag
+import board
 
-    def __init__(self, wheelsL, wheelsR):
-        # Instance attributes (unique to each object)
-        self.wheelsL = wheelsL
-        self.wheelsR = WheelsR
+class Aroweek:
+    wheel_diameter = 60 #mm
+    steps_per_revolution = 200
+    
+    mm_per_step = (np.pi*wheel_diameter)/steps_per_revolution
+
+    def __init__(self, left_wheel_pin, left_encoder_pin_A, left_encoder_pin_B, right_wheel_pin, right_encoder_pin_A, right_encoder_pin_B):
+        self.left_wheel_pin = left_wheel_pin
+        self.left_encoder = Encoder.Encoder(left_encoder_pin_A, left_encoder_pin_B)
+        self.right_wheel_pin = right_wheel_pin
+        self.right_encoder = Encoder.Encoder(right_encoder_pin_A, right_encoder_pin_B)
+        self.compass = adafruit_lsm303dlh_mag.LSM303DLH_Mag(board.i2c())
+        
+        self.x_pos = 0
+        self.y_pos = 0
 
     # Instance method
     def drive(self, miles):
@@ -22,6 +34,10 @@ class Aroweek:
             print(f"{self.brand} {self.model} drove {miles} miles.")
         else:
             print("Miles must be positive!")
+            
+    def get_orientation(self):
+        magnet_x, magnet_y, _ = self.compass.megnetic
+        return np.arctan2(magnet_y, magnet_x)
 
     # Getter method (property)
     @property
