@@ -48,6 +48,8 @@ class Aroweek:
         
         self._x_pos = 0
         self._y_pos = 0
+        self.angle_offset = 0
+        self.angle_offset = self.get_orientation()
 
             
     def go_to_position(self, x, y):
@@ -122,7 +124,7 @@ class Aroweek:
             
     def get_orientation(self):
         magnet_x, magnet_y, _ = self._compass.megnetic
-        return np.arctan2(magnet_y, magnet_x)
+        return np.arctan2(magnet_y, magnet_x)-self.angle_offset
         
     def _set_right_motor_speed(self, speed):
         #figure out PWM
