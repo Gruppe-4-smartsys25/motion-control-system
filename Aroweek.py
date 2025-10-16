@@ -16,7 +16,7 @@ class Aroweek:
     steps_per_revolution = 4 #directly on motor
     motor_gear_ratio = 50/1 #50 to 1
     
-    wheel_center_to_center = [250, 300]
+    wheel_centre_to_centre = [250, 300]
     
     max_velocity = 100 #mm/s
     acceleration = 50 #mm/s
@@ -24,8 +24,8 @@ class Aroweek:
     target_angle_tollerance = 0.01*2*np.pi #radian
     
     mm_per_step = (np.pi*wheel_diameter)/(steps_per_revolution*motor_gear_ratio)
-    stationary_turn_radius = 0.5*np.sqrt(wheel_center_to_center[0]**2 + wheel_center_to_center[1]**2)
-    tangential_turning_velocity =  wheel_center_to_center/(2*stationary_turn_radius)
+    stationary_turn_radius = 0.5*np.sqrt(wheel_centre_to_centre[0]**2 + wheel_centre_to_centre[1]**2)
+    tangential_turning_velocity =  wheel_centre_to_centre/(2*stationary_turn_radius)
     
 
     def __init__(self, left_wheel_pin, left_encoder_pin_A, left_encoder_pin_B, right_wheel_pin, right_encoder_pin_A, right_encoder_pin_B):
@@ -67,7 +67,8 @@ class Aroweek:
         accel = self.acceleration
         speed_0 = 0
         
-        while((self._x_pos-starting_x)**2+(self._y_pos-starting_y)**2 < distance**2):
+        remaining_distance = distance
+        while(remaining_distance > 0):
             remaining_distance = distance - np.sqrt((self._x_pos-starting_x)**2+(self._y_pos-starting_y)**2)
             stopping_distance = speed**2/(2*self.acceleration)
 
