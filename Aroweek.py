@@ -7,6 +7,8 @@ Created on Mon Sep 15 00:21:36 2025
 
 import numpy as np
 import rotary_encoder
+from gpiozero.pins.native import PiGPIOFactory
+from gpiozero import Device, PWMOutputDevice as PWM_pin, DigitalOutputDevice as D_pin
 import adafruit_lsm303dlh_mag
 import board
 import time
@@ -27,8 +29,21 @@ class Aroweek:
     stationary_turn_radius = 0.5*np.sqrt(wheel_centre_to_centre[0]**2 + wheel_centre_to_centre[1]**2)
     tangential_turning_velocity =  wheel_centre_to_centre/(2*stationary_turn_radius)
     
+    speed_curve = [[0.00000000e+00,5.26315789e+00,1.05263158e+01,1.57894737e+01,
+      2.10526316e+01,2.63157895e+01,3.15789474e+01,3.68421053e+01,
+      4.21052632e+01,4.73684211e+01,5.26315789e+01,5.78947368e+01,
+      6.31578947e+01,6.84210526e+01,7.36842105e+01,7.89473684e+01,
+      8.42105263e+01,8.94736842e+01,9.47368421e+01,1.00000000e+02],
+     [0.00000000e+00,5.26315789e-02,1.05263158e-01,1.57894737e-01,
+      2.10526316e-01,2.63157895e-01,3.15789474e-01,3.68421053e-01,
+      4.21052632e-01,4.73684211e-01,5.26315789e-01,5.78947368e-01,
+      6.31578947e-01,6.84210526e-01,7.36842105e-01,7.89473684e-01,
+      8.42105263e-01,8.94736842e-01,9.47368421e-01,1.00000000e+00]]
+    
 
-    def __init__(self, left_wheel_pin, left_encoder_pin_A, left_encoder_pin_B, right_wheel_pin, right_encoder_pin_A, right_encoder_pin_B):
+    def __init__(self, left_wheel_pin, left_dir_pin, left_encoder_pin_A, left_encoder_pin_B, right_wheel_pin, right_dir_pin, right_encoder_pin_A, right_encoder_pin_B):
+        Device.pin_factory = PiGPIOFactory()
+        
         self._left_wheel_pin = left_wheel_pin
         self._right_wheel_pin = right_wheel_pin
         self._compass = adafruit_lsm303dlh_mag.LSM303DLH_Mag(board.i2c())
@@ -45,6 +60,11 @@ class Aroweek:
             on_clockwise_turn=self._encoder_increment,
             on_counter_clockwise_turn=self._encoder_decrement
             )
+        
+        self.left_motor = PWM_pin(left_wheel_pin)
+        self.left_motor_dir = D_pin(left_dir_pin)
+        self.right_motor = PWM_pin(right_wheel_pin)
+        self.right_motor_dir = D_pin(right_dir_pin)
         
         self._x_pos = 0
         self._y_pos = 0
@@ -120,19 +140,25 @@ class Aroweek:
             self._set_right_motor_speed(speed*direction)
         self._set_left_motor_speed(0)
         self._set_right_motor_speed(0)
-        
             
     def get_orientation(self):
         magnet_x, magnet_y, _ = self._compass.megnetic
         return np.arctan2(magnet_y, magnet_x)-self.angle_offset
         
     def _set_right_motor_speed(self, speed):
-        #figure out PWM
-        print("not implemented")
+        self.right_motor_dir.value = speed < 0
+        self.right_motor.value = self._speed_to_pwm(speed)
         
     def _set_left_motor_speed(self, speed):
-        #figure out PWM
-        print("not implemented")
+        self.left_motor_dir.value = speed < 0
+        self.left_motor.value = self._speed_to_pwm(speed)
+    
+    def _speed_to_pwm(self, speed):
+        for i in range(0, len(self.speed_curve[0] - 1)):
+            if speed >= self.speed_curve[0][i]:
+                inter = (self.speed_curve[1][i+1] - self.speed_curve[i][i])*(speed-self.speed_curve[0][i])/(self.speed_curve[0][i]-self.speed_curve[0][i+1])
+                return self.speed_curve[1][i] + inter
+        raise ValueError("Speed outside available speed range.")
         
     def _encoder_increment(self):
         angle = self.get_orientation()
