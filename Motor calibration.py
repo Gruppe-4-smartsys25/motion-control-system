@@ -77,9 +77,9 @@ rotary_encoder.connect(
     on_counter_clockwise_turn=right_encoder_decrement)
 
 
+
 PWM_values = np.linspace(start_pwm, end_pwm, pwm_steps)
 speed_values = np.zeros((3, pwm_steps))
-
 
 for i in range(0, pwm_steps):
     left_motor.value = PWM_values[i]

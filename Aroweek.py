@@ -159,11 +159,11 @@ class Aroweek:
         self.left_motor.value = self._speed_to_pwm(speed, 0)
     
     def _speed_to_pwm(self, speed, side):
-        for i in range(0, len(self.speed_curve[0] - 1)):
-            if speed >= self.speed_curve[side][i]:
+        for i in range(1, len(self.speed_curve[0])):
+            if speed <= self.speed_curve[side][i]:
                 #interpolation between the closest value below and the closest value above
-                inter = (self.speed_curve[2][i+1] - self.speed_curve[side][i])*(speed-self.speed_curve[side][i])/(self.speed_curve[side][i]-self.speed_curve[side][i+1])
-                return self.speed_curve[side][i] + inter
+                inter = (self.speed_curve[2][i] - self.speed_curve[2][i-1])*(speed-self.speed_curve[side][i-1])/(self.speed_curve[side][i]-self.speed_curve[side][i-1])
+                return self.speed_curve[side][i-1] + inter
         raise ValueError("Speed outside available speed range.")
         
     def _encoder_increment(self):
