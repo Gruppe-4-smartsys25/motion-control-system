@@ -34,6 +34,11 @@ class Aroweek:
       4.21052632e+01,4.73684211e+01,5.26315789e+01,5.78947368e+01,
       6.31578947e+01,6.84210526e+01,7.36842105e+01,7.89473684e+01,
       8.42105263e+01,8.94736842e+01,9.47368421e+01,1.00000000e+02],
+     [0.00000000e+00,5.31578947e+00,1.06315789e+01,1.59473684e+01,
+      2.12631579e+01,2.65789474e+01,3.18947368e+01,3.72105263e+01,
+      4.25263158e+01,4.78421053e+01,5.31578947e+01,5.84736842e+01,
+      6.37894737e+01,6.91052632e+01,7.44210526e+01,7.97368421e+01,
+      8.50526316e+01,9.03684211e+01,9.56842105e+01,1.01000000e+02],
      [0.00000000e+00,5.26315789e-02,1.05263158e-01,1.57894737e-01,
       2.10526316e-01,2.63157895e-01,3.15789474e-01,3.68421053e-01,
       4.21052632e-01,4.73684211e-01,5.26315789e-01,5.78947368e-01,
@@ -146,18 +151,19 @@ class Aroweek:
         return np.arctan2(magnet_y, magnet_x)-self.angle_offset
         
     def _set_right_motor_speed(self, speed):
-        self.right_motor_dir.value = speed < 0
-        self.right_motor.value = self._speed_to_pwm(speed)
+        self.right_motor_dir.value = float(speed < 0)
+        self.right_motor.value = self._speed_to_pwm(speed, 1)
         
     def _set_left_motor_speed(self, speed):
-        self.left_motor_dir.value = speed < 0
-        self.left_motor.value = self._speed_to_pwm(speed)
+        self.left_motor_dir.value = float(speed < 0)
+        self.left_motor.value = self._speed_to_pwm(speed, 0)
     
-    def _speed_to_pwm(self, speed):
+    def _speed_to_pwm(self, speed, side):
         for i in range(0, len(self.speed_curve[0] - 1)):
-            if speed >= self.speed_curve[0][i]:
-                inter = (self.speed_curve[1][i+1] - self.speed_curve[i][i])*(speed-self.speed_curve[0][i])/(self.speed_curve[0][i]-self.speed_curve[0][i+1])
-                return self.speed_curve[1][i] + inter
+            if speed >= self.speed_curve[side][i]:
+                #interpolation between the closest value below and the closest value above
+                inter = (self.speed_curve[2][i+1] - self.speed_curve[side][i])*(speed-self.speed_curve[side][i])/(self.speed_curve[side][i]-self.speed_curve[side][i+1])
+                return self.speed_curve[side][i] + inter
         raise ValueError("Speed outside available speed range.")
         
     def _encoder_increment(self):
