@@ -68,8 +68,8 @@ def getOffsets(readings = 100, desired_amp = 1):
     direction = ['north', 'south']
     for i in range(6):
         input("turn " + str(order[int(i/2)]) + " towards " + direction[i%2] + ", then press enter")
-        for i in range(readings):
-            vals[i] += readAxisData()[0]
+        for n in range(readings):
+            vals[i] += readAxisData()[int(i/2)]
             time.sleep(0.005)
         vals[i] /= readings
     
