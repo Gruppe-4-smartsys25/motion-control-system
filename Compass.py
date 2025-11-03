@@ -97,7 +97,7 @@ def readAxisData():
     y = _twos_comp(((yh & 0xff)<<8) | yl, 16) # plus the y offset and everything times the y scale. See below.
     z = _twos_comp(((zh & 0xff)<<8) | zl, 16)
 
-    return (x, y, z)
+    return ((x+x_offset)*x_scale, (y+y_offset)*y_scale, (z+z_offset)*z_scale)
 
 def getHeading():
     values = readAxisData()
