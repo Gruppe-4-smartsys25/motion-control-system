@@ -6,55 +6,60 @@ Created on Mon Nov  3 16:22:50 2025
 """
 
 import smbus
+import time
 import math
+
+bus = smbus.SMBus(1)
 
 DEVICE_ADDRESS = 0x1e
 REGISTER_CRA_REG_M = 0x00
-REGISTER_CRB_REG_M = 0x01
 REGISTER_MR_REG_M = 0x02
 REGISTER_OUT_X_H_M = 0x03
-REGISTER_OUT_X_L_M = 0x04
+REGISTER_OUT_X_LH_M = 0x04
 REGISTER_OUT_Z_H_M = 0x05
 REGISTER_OUT_Z_L_M = 0x06
 REGISTER_OUT_Y_L_M = 0X08
 REGISTER_OUT_Y_H_M = 0X07
 
-bus = smbus.SMBus(1)
-
-def _twos_comp(val, bits):
-    if (val & (1<<(bits-1))) != 0:
-        return val - (1<<bits)
-    return val
-
-def wake():
-    bus.write_byte_data(DEVICE_ADDRESS, REGISTER_MR_REG_M, 0)
-
-def sleep():
-    bus.write_byte_data(DEVICE_ADDRESS, REGISTER_MR_REG_M, 2)
-
-def setHighSpeedDataRate():
-    bus.write_byte_data(DEVICE_ADDRESS, REGISTER_CRA_REG_M, 0x1c) # 220Hz
-
-def setNormalSpeedDataRate():
-    bus.write_byte_data(DEVICE_ADDRESS, REGISTER_CRA_REG_M, 0x10) # 15Hz
-
-def readAxisData():
-    xl = bus.read_byte_data(DEVICE_ADDRESS, REGISTER_OUT_X_L_M)
+def getX():
+    xl = bus.read_byte_data(DEVICE_ADDRESS, REGISTER_OUT_X_LH_M)
     xh = bus.read_byte_data(DEVICE_ADDRESS, REGISTER_OUT_X_H_M)
-    yl = bus.read_byte_data(DEVICE_ADDRESS, REGISTER_OUT_Y_L_M)
-    yh = bus.read_byte_data(DEVICE_ADDRESS, REGISTER_OUT_Y_H_M)
+    x =  (xh << 8) | xl
+    if x >= 32768:
+        x = x ^ 65535
+        x += 1
+        return -x
+    return x
+
+def getZ():
     zl = bus.read_byte_data(DEVICE_ADDRESS, REGISTER_OUT_Z_L_M)
     zh = bus.read_byte_data(DEVICE_ADDRESS, REGISTER_OUT_Z_H_M)
+    z = (zh << 8) | zl
+    if z >= 32768:
+        z = z ^ 65535
+        z += 1
+        return -z
+    return z
 
-    x = _twos_comp(((xh & 0xff)<<8) | xl, 16) # + the x offset. See below.
-    y = _twos_comp(((yh & 0xff)<<8) | yl, 16) # plus the y offset and everything times the y scale. See below.
-    z = _twos_comp(((zh & 0xff)<<8) | zl, 16)
+def getY():
+    yl = bus.read_byte_data(DEVICE_ADDRESS, REGISTER_OUT_Y_L_M)
+    yh = bus.read_byte_data(DEVICE_ADDRESS, REGISTER_OUT_Y_H_M)
+    y = (yh << 8) | yl
+    if y >= 32768:
+        y = y ^ 65535
+        y += 1
+        return -y
+    return y
 
-    return (x, y, z)
+bus.write_byte_data(DEVICE_ADDRESS, REGISTER_CRA_REG_M, 0x90)
+bus.write_byte_data(DEVICE_ADDRESS, REGISTER_MR_REG_M, 0)
 
-def getHeading():
-    values = readAxisData()
-    return math.degrees(math.atan2(values[1], values[0]))
-
-setNormalSpeedDataRate()
-bus.write_byte_data(DEVICE_ADDRESS, REGISTER_CRB_REG_M, 0x40)
+try:
+    while True:
+        x = getX()
+        y = getY()
+        z = getZ()
+        print(math.degrees(math.atan2(y, x)))
+        time.sleep(1)
+except KeyboardInterrupt:
+    pass
