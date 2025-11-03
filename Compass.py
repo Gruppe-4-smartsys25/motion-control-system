@@ -10,12 +10,16 @@ Created on Mon Nov  3 16:22:50 2025
 #1. Write CFG_REG_A_M = 00h // Mag = 10 Hz (high-resolution and continuous mode)
 #2. Write CFG_REG_C_M = 01h // Mag data-ready interrupt enable
 
+#extra
+# CFG_REG_B_M = 03h, enable low pass filter and offset cancelation
+
 import smbus
 import math
 
 DEVICE_ADDRESS = 0x1e
 
 CFG_REG_A_M = 0x60
+CFG_REG_B_M = 0x61
 CFG_REG_C_M = 0x62
 OUTX_L_REG_M = 0x68
 OUTX_H_REG_M = 0x69
@@ -33,6 +37,7 @@ def _twos_comp(val, bits):
 
 def startup():
     bus.write_byte_data(DEVICE_ADDRESS, CFG_REG_A_M, 0x00)
+    bus.write_byte_data(DEVICE_ADDRESS, CFG_REG_B_M, 0x03)
     bus.write_byte_data(DEVICE_ADDRESS, CFG_REG_C_M, 0x01)
 
 def readAxisData():
