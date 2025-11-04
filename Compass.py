@@ -6,12 +6,25 @@ Created on Mon Nov  3 16:22:50 2025
 (and Åsmund a little)
 """
 
-#startup sequence, mag
-#1. Write CFG_REG_A_M = 00h // Mag = 10 Hz (high-resolution and continuous mode)
-#2. Write CFG_REG_C_M = 01h // Mag data-ready interrupt enable
+"""
+From microbit lsm303 driver: https://github.com/lancaster-university/microbit-dal/blob/master/source/drivers/LSM303Magnetometer.cpp
+And LSM303AGR datasheet: https://www.st.com/resource/en/datasheet/lsm303agr.pdf
 
-#extra
-# CFG_REG_B_M = 03h, enable low pass filter and offset cancelation
+config
+CFG_REG_A_M = 0x00/0x04/0x08/0x0C  -only setting ODR
+CFG_REG_C_M = 0x01 -configures the INT_MAG/DRDY as a digital output, not something we strictly need
+
+when reading
+Register: OUTX_L_REG_M | 0x80, the 0x80 sets the MSB high, this enables auto increment
+    (LSM303AGR datasheet, 6.1.1 I2C operation, 3rd paragraph)
+    
+
+Swaps and inverts x and y, probably to align more sensibly with the microbit
+Also "normalizes" each axis, by multiplying them by 150
+
+
+Need to look more into the calibration done
+"""
 
 import smbus
 import math
