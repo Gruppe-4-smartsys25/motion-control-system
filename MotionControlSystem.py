@@ -13,7 +13,7 @@ import adafruit_lsm303dlh_mag
 import board
 import time
 
-class Aroweek:
+class MotionControlSystem:
     wheel_diameter = 60 #mm
     steps_per_revolution = 4 #directly on motor
     motor_gear_ratio = 50/1 #50 to 1
