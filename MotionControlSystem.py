@@ -48,9 +48,7 @@ class MotionControlSystem:
 
     def __init__(self, left_wheel_pin, left_dir_pin, left_encoder_pin_A, left_encoder_pin_B, right_wheel_pin, right_dir_pin, right_encoder_pin_A, right_encoder_pin_B):
         Device.pin_factory = PiGPIOFactory()
-        
-        self._left_wheel_pin = left_wheel_pin
-        self._right_wheel_pin = right_wheel_pin
+
         self._compass = adafruit_lsm303dlh_mag.LSM303DLH_Mag(board.i2c())
         
         rotary_encoder.connect(
@@ -75,6 +73,8 @@ class MotionControlSystem:
         self._y_pos = 0
         self.angle_offset = 0
         self.angle_offset = self.get_orientation()
+        
+        self.stop_vehicle = False #implement
 
             
     def go_to_position(self, x, y):
