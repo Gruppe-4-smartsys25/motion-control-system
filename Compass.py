@@ -85,11 +85,11 @@ def score(c, points):
         minD = min(minD, d)
         maxD = max(maxD, d)
     
-    return math.sqrt(maxD)-math.sqrt(minD)
+    #return math.sqrt(maxD)-math.sqrt(minD)
+    return maxD-minD
 
 
-def getAproximateCenter(points, dStep = 0.0001, step_scale = 0.1):
-    
+def getAproximateCenter(points, step = 1):
     #average position is used as a starting point
     avgPos = [0,0,0]
     for p in points:
@@ -100,39 +100,77 @@ def getAproximateCenter(points, dStep = 0.0001, step_scale = 0.1):
     avgPos[1] /= len(points)
     avgPos[2] /= len(points)
     
-    c = avgPos 
+    last_c = c = avgPos 
+    best_score = score(c, points)
     
-    loops = 0
     while True:
-        s_c = score(c, points)
-        ds_dx = (score([c[0]+dStep, c[1], c[2]], points) - s_c)/dStep
-        ds_dy = (score([c[0], c[1]+dStep, c[2]], points) - s_c)/dStep
-        ds_dz = (score([c[0], c[1], c[2]+dStep], points) - s_c)/dStep
+        for x in range(-step, step, step):
+            for y in range(-step, step, step):
+                for z in range(-step, step, step):
+                    t = c
+                    t[0] += x
+                    t[1] += y
+                    t[2] += z
+                    
+                    s = score(t, points)
+                    if(s < best_score):
+                        best_score = s
+                        c = t
         
-        gradient = [ds_dx, ds_dy, ds_dz]
-        
-        if(round(gradient[0], 2) == 0 and round(gradient[1], 2) == 0 and round(gradient[2], 2) == 0):
+        if last_c == c:
             break
         
-        step = step_scale
-        new_c = c
-        while True:
-            c_x = c[0] - step*gradient[0]
-            c_y = c[1] - step*gradient[1]
-            c_z = c[2] - step*gradient[2]
-            new_c = [c_x, c_y, c_z]
-            
-            if score(new_c, points) < s_c:
-                c = new_c
-                break
-            else:
-                step /= 2
-        
-        if(loops > 10000):
-            raise "Too many loops"
-        loops+=1
-    
+        last_c = c
     return c
+    
+                
+    
+
+# def getAproximateCenter(points, dStep = 0.0001, step_scale = 0.1):
+    
+#     #average position is used as a starting point
+#     avgPos = [0,0,0]
+#     for p in points:
+#         avgPos[0] = p[0]
+#         avgPos[1] = p[1]
+#         avgPos[2] = p[2]
+#     avgPos[0] /= len(points)
+#     avgPos[1] /= len(points)
+#     avgPos[2] /= len(points)
+    
+#     c = avgPos 
+    
+#     loops = 0
+#     while True:
+#         s_c = score(c, points)
+#         ds_dx = (score([c[0]+dStep, c[1], c[2]], points) - s_c)/dStep
+#         ds_dy = (score([c[0], c[1]+dStep, c[2]], points) - s_c)/dStep
+#         ds_dz = (score([c[0], c[1], c[2]+dStep], points) - s_c)/dStep
+        
+#         gradient = [ds_dx, ds_dy, ds_dz]
+        
+#         if(round(gradient[0], 2) == 0 and round(gradient[1], 2) == 0 and round(gradient[2], 2) == 0):
+#             break
+        
+#         step = step_scale
+#         new_c = c
+#         while True:
+#             c_x = c[0] - step*gradient[0]
+#             c_y = c[1] - step*gradient[1]
+#             c_z = c[2] - step*gradient[2]
+#             new_c = [c_x, c_y, c_z]
+            
+#             if score(new_c, points) < s_c:
+#                 c = new_c
+#                 break
+#             else:
+#                 step /= 2
+        
+#         if(loops > 10000):
+#             raise "Too many loops"
+#         loops+=1
+    
+#     return c
         
     
 
