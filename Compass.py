@@ -44,6 +44,10 @@ OUTZ_H_REG_M = 0x6D
 
 bus = smbus.SMBus(1)
 
+calibration_radius = 1
+calibration_center = [0,0,0]
+calibration_scale = [1,1,1]
+
 
 def _twos_comp(val, bits):
     if (val & (1<<(bits-1))) != 0:
@@ -52,15 +56,18 @@ def _twos_comp(val, bits):
 
 def startup():
     bus.write_byte_data(DEVICE_ADDRESS, CFG_REG_A_M, 0x00)
-    bus.write_byte_data(DEVICE_ADDRESS, CFG_REG_B_M, 0x03)
     bus.write_byte_data(DEVICE_ADDRESS, CFG_REG_C_M, 0x01)
+
+def setCalibration(cal):
+    calibration_radius = cal[0]
+    calibration_center = cal[1]
+    calibration_scale = cal[2]
 
     
 def calibrate():
     calibration_data = getCalibrationData(80, 10)
     centre = getAproximateCenter(calibration_data)
-    
-    print(centre)
+    return spherify(centre, calibration_data)
     
 
 def getCalibrationData(n = 100, t=5):
@@ -89,7 +96,7 @@ def score(c, points):
     return maxD-minD
 
 
-def getAproximateCenter(points, step = 200):
+def getAproximateCenter(points, step = 1):
     #average position is used as a starting point
     c = [0,0,0]
     for p in points:
@@ -124,6 +131,48 @@ def getAproximateCenter(points, step = 200):
         c = best_c[:]
     return c
 
+def spherify(c, points):
+    radius = 0    
+    scale = 0
+    weightX = 0
+    weightY = 0
+    weightZ = 0
+    
+    for p in points:
+        radius = max(radius, math.sqrt(squaredDistance(c, p)))
+    
+    for p in points:
+        d = math.sqrt(squaredDistance(c, p))
+        
+        s = (radius/d)-1
+        
+        scale = max(scale, s)
+        
+        dx = p[0] - c[0]
+        dy = p[1] - c[1]
+        dz = p[2] - c[2]
+        
+        weightX += s*abs(dx/d)
+        weightY += s*abs(dy/d)
+        weightZ += s*abs(dz/d)
+    
+    wmag = math.sqrt(weightX**2 + weightY**2 + weightZ**2)
+    
+    scaleX = 1 + scale*(weightX / wmag)
+    scaleY = 1 + scale*(weightY / wmag)
+    scaleZ = 1 + scale*(weightZ / wmag)
+    
+    return (radius, c, [scaleX, scaleY, scaleZ])
+    
+
+def readAxisData():
+    sample = readRawAxisData()
+    outX = (sample[0] - calibration_center[0])*calibration_scale[0]
+    outY = (sample[1] - calibration_center[1])*calibration_scale[1]
+    outZ = (sample[2] - calibration_center[2])*calibration_scale[2]
+    
+    return (outX, outY, outZ)
+
 def readRawAxisData():
     xl = bus.read_byte_data(DEVICE_ADDRESS, OUTX_L_REG_M)
     xh = bus.read_byte_data(DEVICE_ADDRESS, OUTX_H_REG_M)
@@ -136,7 +185,7 @@ def readRawAxisData():
     y = _twos_comp(((yh & 0xff)<<8) | yl, 16) # plus the y offset and everything times the y scale. See below.
     z = _twos_comp(((zh & 0xff)<<8) | zl, 16)
 
-    return (-x*150, -y*150, z*150)
+    return (x, y, z)
 
 def getHeading():
     values = readRawAxisData()
