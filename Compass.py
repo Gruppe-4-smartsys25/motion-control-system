@@ -59,6 +59,9 @@ def startup():
     bus.write_byte_data(DEVICE_ADDRESS, CFG_REG_C_M, 0x01)
 
 def setCalibration(cal):
+    global calibration_radius
+    global calibration_center
+    global calibration_scale
     calibration_radius = cal[0]
     calibration_center = cal[1]
     calibration_scale = cal[2]
@@ -188,5 +191,5 @@ def readRawAxisData():
     return (x, y, z)
 
 def getHeading():
-    values = readRawAxisData()
+    values = readAxisData()
     return math.degrees(math.atan2(values[1], values[0]))
