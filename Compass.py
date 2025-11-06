@@ -56,10 +56,78 @@ def startup():
     bus.write_byte_data(DEVICE_ADDRESS, CFG_REG_C_M, 0x01)
 
     
+def calibrate():
+    calibration_data = getCalibrationData(100, 5)
+    centre = getAproximateCenter(calibration_data)
     
+    print(centre)
     
 
-def readAxisData():
+def getCalibrationData(n = 100, t=5):
+    input("Rotate the sensor around collecting data, hit enter to start data collection.")
+    
+    data = []
+    for i in range(n):
+        print('Reading ' + str(i+1) + '/' + str(n))
+        data.append(readRawAxisData())
+        time.sleep(t/n)
+    
+    return data
+
+def squaredDistance(a, b):
+    return (b[0]-a[0])**2 + (b[1]-a[1])**2 + (b[2]-a[2])**2
+
+def score(c, points):
+    minD = maxD = squaredDistance(c, points[0])
+    
+    for p in points:
+        d = squaredDistance(c, p)
+        minD = min(minD, d)
+        maxD = max(maxD, d)
+    
+    return maxD-minD
+
+
+def getAproximateCenter(points, dStep = 0.1, step_scale = 1):
+    
+    #average position is used as a starting point
+    avgPos = [0,0,0]
+    for p in points:
+        avgPos[0] = p[0]
+        avgPos[1] = p[1]
+        avgPos[2] = p[2]
+    avgPos[0] /= len(points)
+    avgPos[1] /= len(points)
+    avgPos[2] /= len(points)
+    
+    c = avgPos 
+    
+    loops = 0
+    while True:
+        s_c = score(c, points)
+        ds_dx = (score([c[0]+dStep, c[1], c[2]]) - s_c)/dStep
+        ds_dy = (score([c[0], c[1]+dStep, c[2]]) - s_c)/dStep
+        ds_dz = (score([c[0], c[1], c[2]+dStep]) - s_c)/dStep
+        
+        gradient = [ds_dx, ds_dy, ds_dz]
+        
+        if(round(gradient[0], 2) == 0 and round(gradient[1], 2) == 0 and round(gradient[2], 2) == 0):
+            break
+        
+        c_x = c[0] - step_scale*gradient[0]
+        c_y = c[1] - step_scale*gradient[1]
+        c_z = c[2] - step_scale*gradient[2]
+        c = [c_x, c_y, c_z]
+        
+        if(loops > 10000):
+            raise "Too many loops"
+        loops+=1
+    
+    return c
+        
+    
+
+def readRawAxisData():
     xl = bus.read_byte_data(DEVICE_ADDRESS, OUTX_L_REG_M)
     xh = bus.read_byte_data(DEVICE_ADDRESS, OUTX_H_REG_M)
     yl = bus.read_byte_data(DEVICE_ADDRESS, OUTY_L_REG_M)
@@ -74,5 +142,5 @@ def readAxisData():
     return (x, y, z)
 
 def getHeading():
-    values = readAxisData()
+    values = readRawAxisData()
     return math.degrees(math.atan2(values[1], values[0]))
