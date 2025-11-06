@@ -57,7 +57,7 @@ def startup():
 
     
 def calibrate():
-    calibration_data = getCalibrationData(100, 5)
+    calibration_data = getCalibrationData(80, 10)
     centre = getAproximateCenter(calibration_data)
     
     print(centre)
