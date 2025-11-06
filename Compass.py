@@ -85,10 +85,10 @@ def score(c, points):
         minD = min(minD, d)
         maxD = max(maxD, d)
     
-    return maxD-minD
+    return math.sqrt(maxD)-math.sqrt(minD)
 
 
-def getAproximateCenter(points, dStep = 0.1, step_scale = 1):
+def getAproximateCenter(points, dStep = 0.0001, step_scale = 0.1):
     
     #average position is used as a starting point
     avgPos = [0,0,0]
@@ -114,10 +114,19 @@ def getAproximateCenter(points, dStep = 0.1, step_scale = 1):
         if(round(gradient[0], 2) == 0 and round(gradient[1], 2) == 0 and round(gradient[2], 2) == 0):
             break
         
-        c_x = c[0] - step_scale*gradient[0]
-        c_y = c[1] - step_scale*gradient[1]
-        c_z = c[2] - step_scale*gradient[2]
-        c = [c_x, c_y, c_z]
+        step = step_scale
+        new_c = c
+        while True:
+            c_x = c[0] - step*gradient[0]
+            c_y = c[1] - step*gradient[1]
+            c_z = c[2] - step*gradient[2]
+            new_c = [c_x, c_y, c_z]
+            
+            if score(new_c, points) < s_c:
+                c = new_c
+                break
+            else:
+                step /= 2
         
         if(loops > 10000):
             raise "Too many loops"
