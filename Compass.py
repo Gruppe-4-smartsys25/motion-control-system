@@ -105,9 +105,9 @@ def getAproximateCenter(points, dStep = 0.1, step_scale = 1):
     loops = 0
     while True:
         s_c = score(c, points)
-        ds_dx = (score([c[0]+dStep, c[1], c[2]]) - s_c)/dStep
-        ds_dy = (score([c[0], c[1]+dStep, c[2]]) - s_c)/dStep
-        ds_dz = (score([c[0], c[1], c[2]+dStep]) - s_c)/dStep
+        ds_dx = (score([c[0]+dStep, c[1], c[2]], points) - s_c)/dStep
+        ds_dy = (score([c[0], c[1]+dStep, c[2]], points) - s_c)/dStep
+        ds_dz = (score([c[0], c[1], c[2]+dStep], points) - s_c)/dStep
         
         gradient = [ds_dx, ds_dy, ds_dz]
         
