@@ -11,7 +11,7 @@ From microbit lsm303 driver: https://github.com/lancaster-university/microbit-da
 And LSM303AGR datasheet: https://www.st.com/resource/en/datasheet/lsm303agr.pdf
 
 config
-CFG_REG_A_M = 0x00/0x04/0x08/0x0C  -only setting ODR
+CFG_REG_A_M = 0x00/0x04/0x08/0x0C  -only setting ODR, 10/20/50/100Hz
 CFG_REG_C_M = 0x01 -configures the INT_MAG/DRDY as a digital output, not something we strictly need
 
 when reading
@@ -55,7 +55,7 @@ def _twos_comp(val, bits):
     return val
 
 def startup():
-    bus.write_byte_data(DEVICE_ADDRESS, CFG_REG_A_M, 0x00)
+    bus.write_byte_data(DEVICE_ADDRESS, CFG_REG_A_M, 0x08) #50Hz
     bus.write_byte_data(DEVICE_ADDRESS, CFG_REG_C_M, 0x01)
 
 def setCalibration(cal):
@@ -167,7 +167,7 @@ def spherify(c, points):
     
     return (radius, c, [scaleX, scaleY, scaleZ])
     
-
+#do several data readings and average them
 def readAxisData():
     sample = readRawAxisData()
     outX = (sample[0] - calibration_center[0])*calibration_scale[0]
