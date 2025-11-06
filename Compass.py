@@ -91,23 +91,23 @@ def score(c, points):
 
 def getAproximateCenter(points, step = 1):
     #average position is used as a starting point
-    avgPos = [0,0,0]
+    c = [0,0,0]
     for p in points:
-        avgPos[0] = p[0]
-        avgPos[1] = p[1]
-        avgPos[2] = p[2]
-    avgPos[0] /= len(points)
-    avgPos[1] /= len(points)
-    avgPos[2] /= len(points)
+        c[0] = p[0]
+        c[1] = p[1]
+        c[2] = p[2]
+    c[0] /= len(points)
+    c[1] /= len(points)
+    c[2] /= len(points)
     
-    last_c = c = avgPos 
     best_score = score(c, points)
+    best_c = c[:]
     
     while True:
         for x in range(-step, step, step):
             for y in range(-step, step, step):
                 for z in range(-step, step, step):
-                    t = c
+                    t = c[:]
                     t[0] += x
                     t[1] += y
                     t[2] += z
@@ -115,12 +115,13 @@ def getAproximateCenter(points, step = 1):
                     s = score(t, points)
                     if(s < best_score):
                         best_score = s
-                        c = t
+                        best_c = t[:]
+                        
         
-        if last_c == c:
+        if best_c == c:
             break
         
-        last_c = c
+        best_c = c[:]
     return c
     
                 
