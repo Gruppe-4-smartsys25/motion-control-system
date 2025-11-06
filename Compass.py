@@ -96,9 +96,9 @@ def getAproximateCenter(points, step = 200):
         c[0] = p[0]
         c[1] = p[1]
         c[2] = p[2]
-    c[0] /= len(points)
-    c[1] /= len(points)
-    c[2] /= len(points)
+    c[0] = int(c[0] / len(points))
+    c[1] = int(c[1] / len(points))
+    c[2] = int(c[2] / len(points))
     
     best_score = score(c, points)
     best_c = c[:]
