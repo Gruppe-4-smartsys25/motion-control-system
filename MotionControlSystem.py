@@ -86,7 +86,7 @@ class MotionControlSystem:
             
     def go_to_position(self, x, y):
         distance = math.sqrt((x-self._x_pos)**2+(y-self._y_pos)**2)
-        angle = math.arctan2(y-self._y_pos, x-self._x_pos)
+        angle = math.arctan2(y-self._y_pos, x-self._x_pos) % (2*math.pi)
         
         self._rotate_vehicle_to(angle)
         self.drive_forward(distance)
