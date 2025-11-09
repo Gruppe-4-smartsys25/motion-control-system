@@ -5,13 +5,12 @@ Created on Mon Sep 15 00:21:36 2025
 @author: Åsmund
 """
 
-import numpy as np
+import math
 import rotary_encoder
 from gpiozero.pins.native import PiGPIOFactory
-from gpiozero import Device, PWMOutputDevice as PWM_pin, DigitalOutputDevice as D_pin
-import adafruit_lsm303dlh_mag
-import board
+from gpiozero import Device, PWMOutputDevice as PWM_pin, DigitalOutputDevice as D_pin, AngularServo as servo
 import time
+import Compass as compass
 
 class MotionControlSystem:
     wheel_diameter = 60 #mm
@@ -23,10 +22,10 @@ class MotionControlSystem:
     max_velocity = 100 #mm/s
     acceleration = 50 #mm/s
     
-    target_angle_tollerance = 0.01*2*np.pi #radian
+    target_angle_tollerance = 0.01*2*math.pi #radian
     
-    mm_per_step = (np.pi*wheel_diameter)/(steps_per_revolution*motor_gear_ratio)
-    stationary_turn_radius = 0.5*np.sqrt(wheel_centre_to_centre[0]**2 + wheel_centre_to_centre[1]**2)
+    mm_per_step = (math.pi*wheel_diameter)/(steps_per_revolution*motor_gear_ratio)
+    stationary_turn_radius = 0.5*math.sqrt(wheel_centre_to_centre[0]**2 + wheel_centre_to_centre[1]**2)
     tangential_turning_velocity =  wheel_centre_to_centre/(2*stationary_turn_radius)
     
     speed_curve = [[0.00000000e+00,5.26315789e+00,1.05263158e+01,1.57894737e+01,
@@ -45,11 +44,13 @@ class MotionControlSystem:
       6.31578947e-01,6.84210526e-01,7.36842105e-01,7.89473684e-01,
       8.42105263e-01,8.94736842e-01,9.47368421e-01,1.00000000e+00]]
     
+    compass_calibration = (1, [0, 0, 0], [1, 1, 1])
+    
 
-    def __init__(self, left_wheel_pin, left_dir_pin, left_encoder_pin_A, left_encoder_pin_B, right_wheel_pin, right_dir_pin, right_encoder_pin_A, right_encoder_pin_B):
+    def __init__(self, left_wheel_pin, left_dir_pin, left_encoder_pin_A, left_encoder_pin_B, right_wheel_pin, right_dir_pin, right_encoder_pin_A, right_encoder_pin_B, rotation_servo_pin, tilt_servo_pin, pump_pin):
         Device.pin_factory = PiGPIOFactory()
-
-        self._compass = adafruit_lsm303dlh_mag.LSM303DLH_Mag(board.i2c())
+        compass.startup()
+        compass.setCalibration(self.compass_calibration)
         
         rotary_encoder.connect(
             clk_pin=left_encoder_pin_A,
@@ -74,18 +75,24 @@ class MotionControlSystem:
         self.angle_offset = 0
         self.angle_offset = self.get_orientation()
         
+        self.rotation_servo = servo(rotation_servo_pin)
+        self.tilt_servo = servo(tilt_servo_pin)
+        self.sprayer_pump = D_pin(pump_pin)
+        
         self.stop_vehicle = False #implement
-
+    
+    def rotate_by(self, angle):
+        self._rotate_vehicle_to((self.get_orientation()+angle) % (2*math.pi))
             
     def go_to_position(self, x, y):
-        distance = np.sqrt((x-self._x_pos)**2+(y-self._y_pos)**2)
-        angle = np.arctan2(y-self._y_pos, x-self._x_pos)
+        distance = math.sqrt((x-self._x_pos)**2+(y-self._y_pos)**2)
+        angle = math.arctan2(y-self._y_pos, x-self._x_pos)
         
         self._rotate_vehicle_to(angle)
-        self.travel_distance_forward(distance)
+        self.drive_forward(distance)
         
         
-    def _travel_distance_forward(self, distance):
+    def drive_forward(self, distance):
         starting_x = self._x_pos
         starting_y = self._y_pos
         
@@ -96,11 +103,11 @@ class MotionControlSystem:
         
         remaining_distance = distance
         while(remaining_distance > 0):
-            remaining_distance = distance - np.sqrt((self._x_pos-starting_x)**2+(self._y_pos-starting_y)**2)
+            remaining_distance = distance - math.sqrt((self._x_pos-starting_x)**2+(self._y_pos-starting_y)**2)
             stopping_distance = speed**2/(2*self.acceleration)
 
             if remaining_distance > stopping_distance:
-                speed = np.clip(speed_0 + (time.time()-time_0)*accel, 0, self.max_velocity)
+                speed = min(speed_0 + (time.time()-time_0)*accel, self.max_velocity)
                 
             elif remaining_distance < stopping_distance and accel > 0:
                 time_0 = time.time()
@@ -122,19 +129,19 @@ class MotionControlSystem:
         accel = self.acceleration
         speed_0 = 0
         
-        while(np.abs(angle - self.get_orientation()) > self.target_angle_tollerance):
+        while(abs(angle - self.get_orientation()) > self.target_angle_tollerance):
             delta_angle = angle - self.get_orientation()
-            direction = np.sign(delta_angle)
+            direction = math.copysign(1, delta_angle)
             delta_angle = abs(delta_angle)
-            if delta_angle > np.pi:
+            if delta_angle > math.pi:
                 direction = -direction
-                delta_angle -= np.pi
+                delta_angle -= math.pi
             
             remaining_distance = delta_angle*self.stationary_turn_radius
             stopping_distance = self.tangential_turning_velocity * speed**2/(2*self.acceleration)
             
             if remaining_distance > stopping_distance:
-                speed = np.clip(speed_0 + (time.time()-time_0)*accel, 0, self.max_velocity)
+                speed = min(speed_0 + (time.time()-time_0)*accel, self.max_velocity)
                 
             elif remaining_distance < stopping_distance and accel > 0:
                 time_0 = time.time()
@@ -147,8 +154,18 @@ class MotionControlSystem:
         self._set_right_motor_speed(0)
             
     def get_orientation(self):
-        magnet_x, magnet_y, _ = self._compass.megnetic
-        return np.arctan2(magnet_y, magnet_x)-self.angle_offset
+        compass_xyz = compass.readAxisData()
+        return (math.arctan2(compass_xyz[1], compass_xyz[0])-self.angle_offset) % (2*math.pi)
+    
+    #might need to interpolate, depending on the servo
+    def rotate_camera(self, angle):
+        self.rotation_servo.angle = angle
+    
+    def tilt_camera(self, angle):
+        self.tilt_servo.angle = angle
+    
+    def set_sprayer_state(self, state):
+        self.sprayer_pump.value = state
         
     def _set_right_motor_speed(self, speed):
         self.right_motor_dir.value = float(speed < 0)
@@ -168,10 +185,10 @@ class MotionControlSystem:
         
     def _encoder_increment(self):
         angle = self.get_orientation()
-        self._x_pos += self.mm_per_step*np.sin(angle)/2
-        self._y_pos += self.mm_per_step*np.cos(angle)/2
+        self._x_pos += self.mm_per_step*math.sin(angle)/2
+        self._y_pos += self.mm_per_step*math.cos(angle)/2
         
     def _encoder_decrement(self):
         angle = self.get_orientation()
-        self._x_pos -= self.mm_per_step*np.sin(angle)/2
-        self._y_pos -= self.mm_per_step*np.cos(angle)/2
+        self._x_pos -= self.mm_per_step*math.sin(angle)/2
+        self._y_pos -= self.mm_per_step*math.cos(angle)/2

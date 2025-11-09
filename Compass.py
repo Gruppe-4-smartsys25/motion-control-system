@@ -11,7 +11,7 @@ LSM303AGR datasheet: https://www.st.com/resource/en/datasheet/lsm303agr.pdf
 
 
 how microbit reads the compass:
-config
+startup
 CFG_REG_A_M = 0x00/0x04/0x08/0x0C  -only setting ODR, 10/20/50/100Hz
 CFG_REG_C_M = 0x01 -configures the INT_MAG/DRDY as a digital output, not something we strictly need
 
