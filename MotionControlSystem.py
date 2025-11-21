@@ -162,7 +162,7 @@ class MotionControlSystem:
             
     def get_orientation(self):
         compass_xyz = compass.readAxisData()
-        return (math.arctan2(compass_xyz[1], compass_xyz[0])-self.angle_offset) % (2*math.pi)
+        return (math.arctan2(compass_xyz[2], compass_xyz[0])-self.angle_offset) % (2*math.pi)
     
     #might need to interpolate, depending on the servo
     def rotate_camera(self, angle):
