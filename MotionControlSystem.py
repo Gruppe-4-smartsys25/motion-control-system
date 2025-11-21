@@ -66,9 +66,9 @@ class MotionControlSystem:
             )
         
         self.left_motor = PWM_pin(left_wheel_pin)
-        self.left_motor_dir = D_pin(left_dir_pin)
+        self.left_motor_dir = PWM_pin(left_dir_pin)
         self.right_motor = PWM_pin(right_wheel_pin)
-        self.right_motor_dir = D_pin(right_dir_pin)
+        self.right_motor_dir = PWM_pin(right_dir_pin)
         
         self._x_pos = 0
         self._y_pos = 0
@@ -168,12 +168,20 @@ class MotionControlSystem:
         self.sprayer_pump.value = state
         
     def _set_right_motor_speed(self, speed):
-        self.right_motor_dir.value = float(speed < 0)
-        self.right_motor.value = self._speed_to_pwm(speed, 1)
+        if speed < 0:
+            self.right_motor.value = 0
+            self.right_motor_dir.val = abs(speed)
+        else:
+            self.right_motor_dir.value = 0
+            self.right_motor.value = speed
         
     def _set_left_motor_speed(self, speed):
-        self.left_motor_dir.value = float(speed < 0)
-        self.left_motor.value = self._speed_to_pwm(speed, 0)
+        if speed < 0:
+            self.left_motor.value = 0
+            self.left_motor_dir.val = abs(speed)
+        else:
+            self.left_motor_dir.value = 0
+            self.left_motor.value = speed
     
     def _speed_to_pwm(self, speed, side):
         for i in range(1, len(self.speed_curve[0])):
