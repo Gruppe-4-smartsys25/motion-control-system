@@ -103,6 +103,13 @@ class MotionControlSystem:
         
         remaining_distance = distance
         while(remaining_distance > 0):
+            if(self.stop_vehicle and accel > 0):
+                distance -= speed**2/(2*self.acceleration)
+                time_0 = time.time()
+                speed_0 = speed
+                accel = -self.acceleration
+                
+            
             remaining_distance = distance - math.sqrt((self._x_pos-starting_x)**2+(self._y_pos-starting_y)**2)
             stopping_distance = speed**2/(2*self.acceleration)
 
